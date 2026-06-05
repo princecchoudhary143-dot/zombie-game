@@ -1,0 +1,182 @@
+ZombieShooter.html
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Zombie Shooter</title>
+<style>
+body{
+  margin:0;
+  overflow:hidden;
+  background:black;
+}
+canvas{
+  display:block;
+}
+</style>
+</head>
+<body>
+
+<canvas id="game"></canvas>
+
+<script>
+const canvas = document.getElementById("game");
+const ctx = canvas.getContext("2d");
+
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
+
+let score = 0;
+let gameOver = false;
+
+const player = {
+  x: canvas.width/2,
+  y: canvas.height-80,
+  size: 25,
+  health: 5
+};
+
+const bullets = [];
+const zombies = [];
+
+canvas.addEventListener("touchmove",(e)=>{
+  player.x = e.touches[0].clientX;
+
+  if(player.x < player.size)
+      player.x = player.size;
+
+  if(player.x > canvas.width-player.size)
+      player.x = canvas.width-player.size;
+});
+
+canvas.addEventListener("click",shoot);
+canvas.addEventListener("touchstart",shoot);
+
+function shoot(){
+  bullets.push({
+    x:player.x,
+    y:player.y
+  });
+}
+
+setInterval(()=>{
+  if(gameOver) return;
+
+  zombies.push({
+    x:Math.random()*(canvas.width-40),
+    y:-40,
+    size:30,
+    speed:2+Math.random()*2
+  });
+
+},1200);
+
+function update(){
+
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+
+  // Player
+  ctx.fillStyle="cyan";
+  ctx.fillRect(
+    player.x-player.size,
+    player.y-player.size,
+    player.size*2,
+    player.size*2
+  );
+
+  // Bullets
+  ctx.fillStyle="yellow";
+
+  for(let i=bullets.length-1;i>=0;i--){
+
+    bullets[i].y -= 10;
+
+    ctx.fillRect(
+      bullets[i].x-3,
+      bullets[i].y,
+      6,
+      15
+    );
+
+    if(bullets[i].y < 0){
+      bullets.splice(i,1);
+    }
+  }
+
+  // Zombies
+  ctx.fillStyle="green";
+
+  for(let z=zombies.length-1;z>=0;z--){
+
+    zombies[z].y += zombies[z].speed;
+
+    ctx.fillRect(
+      zombies[z].x,
+      zombies[z].y,
+      zombies[z].size,
+      zombies[z].size
+    );
+
+    // Player hit
+    if(
+      zombies[z].y + zombies[z].size > player.y-20 &&
+      zombies[z].x < player.x+25 &&
+      zombies[z].x+zombies[z].size > player.x-25
+    ){
+      zombies.splice(z,1);
+      player.health--;
+
+      if(player.health<=0){
+        gameOver=true;
+      }
+    }
+
+    // Bullet hit
+    for(let b=bullets.length-1;b>=0;b--){
+
+      if(
+        bullets[b] &&
+        bullets[b].x > zombies[z].x &&
+        bullets[b].x < zombies[z].x+zombies[z].size &&
+        bullets[b].y > zombies[z].y &&
+        bullets[b].y < zombies[z].y+zombies[z].size
+      ){
+        bullets.splice(b,1);
+        zombies.splice(z,1);
+        score++;
+        break;
+      }
+    }
+  }
+
+  // UI
+  ctx.fillStyle="white";
+  ctx.font="24px Arial";
+
+  ctx.fillText("Score: "+score,20,40);
+  ctx.fillText("Health: "+player.health,20,80);
+
+  if(gameOver){
+    ctx.font="50px Arial";
+    ctx.fillText(
+      "GAME OVER",
+      canvas.width/2-150,
+      canvas.height/2
+    );
+
+    ctx.font="30px Arial";
+    ctx.fillText(
+      "Score: "+score,
+      canvas.width/2-60,
+      canvas.height/2+50
+    );
+    return;
+  }
+
+  requestAnimationFrame(update);
+}
+
+update();
+</script>
+
+</body>
+</html>
